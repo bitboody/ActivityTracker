@@ -17,7 +17,10 @@ const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 const USER_ID = process.env.USER_ID;
 
-let tracking;
+const tracking = {
+  isSet: false,
+  interval: null,
+};
 
 const client = new Client({
   intents: [
@@ -41,17 +44,28 @@ client.on("interactionCreate", (interaction) => {
   }
 
   if (interaction.commandName == "start") {
-    interaction.reply("Tracking is set to true");
-    tracking = setInterval(
-      () => getMemberActivity(GUILD_ID, USER_ID),
-      60 * 1000
-    );
+    if (!tracking.isSet) {
+      interaction.reply("Tracking is set to true");
+      getMemberActivity(GUILD_ID, USER_ID);
+      tracking.interval = setInterval(
+        () => getMemberActivity(GUILD_ID, USER_ID),
+        60 * 1000
+      );
+      tracking.isSet = true;
+    } else {
+      interaction.reply("Tracking is already set to true");
+    }
   }
 
   if (interaction.commandName == "stop") {
-    clearInterval(tracking);
-    tracking = null;
-    interaction.reply("Tracking is set to false");
+    if (tracking.isSet) {
+      clearInterval(tracking.interval);
+      tracking.interval = null;
+      interaction.reply("Tracking is set to false");
+      tracking.isSet = false;
+    } else {
+      interaction.reply("Tracking is already set to false");
+    }
   }
 });
 
