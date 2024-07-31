@@ -15,7 +15,9 @@ const db = admin.firestore();
 
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
-const MEMBER_ID = process.env.USER_ID;
+const USER_ID = process.env.USER_ID;
+
+let tracking;
 
 const client = new Client({
   intents: [
@@ -29,9 +31,28 @@ const client = new Client({
 
 client.on("ready", (c) => {
   console.log(`${c.user.username} is online`);
+});
 
-  getMemberActivity(GUILD_ID, MEMBER_ID);
-  setInterval(() => getMemberActivity(GUILD_ID, MEMBER_ID), 60 * 1000);
+client.on("interactionCreate", (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.user.id != USER_ID) {
+    interaction.reply("You do not have permission to run this command");
+    return;
+  }
+
+  if (interaction.commandName == "start") {
+    interaction.reply("Tracking is set to true");
+    tracking = setInterval(
+      () => getMemberActivity(GUILD_ID, USER_ID),
+      60 * 1000
+    );
+  }
+
+  if (interaction.commandName == "stop") {
+    clearInterval(tracking);
+    tracking = null;
+    interaction.reply("Tracking is set to false");
+  }
 });
 
 async function getMemberActivity(guildId, memberId) {
@@ -64,8 +85,7 @@ async function getMemberActivity(guildId, memberId) {
               const largeImageURL = activity.assets.largeImageURL();
               console.log(`Large Image URL: ${largeImageURL}`);
               activityImg = largeImageURL;
-            }
-            else if (activity.assets.smallImage) {
+            } else if (activity.assets.smallImage) {
               const smallImageURL = activity.assets.smallImageURL();
               console.log(`Small Image URL: ${smallImageURL}`);
               activityImg = smallImageURL;
